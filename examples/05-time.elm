@@ -2,6 +2,7 @@ import Browser
 import Html exposing (..)
 import Task
 import Time
+import Html.Events exposing (..)
 
 
 
@@ -24,12 +25,13 @@ main =
 type alias Model =
   { zone : Time.Zone
   , time : Time.Posix
+  , paused : Bool
   }
 
 
 init : () -> (Model, Cmd Msg)
 init _ =
-  ( Model Time.utc (Time.millisToPosix 0)
+  ( Model Time.utc (Time.millisToPosix 0) False
   , Task.perform AdjustTimeZone Time.here
   )
 
@@ -41,6 +43,7 @@ init _ =
 type Msg
   = Tick Time.Posix
   | AdjustTimeZone Time.Zone
+  | TogglePause
 
 
 
@@ -57,6 +60,11 @@ update msg model =
       , Cmd.none
       )
 
+    TogglePause ->
+      ( { model | paused = not model.paused}
+      , Cmd.none
+      )
+
 
 
 -- SUBSCRIPTIONS
@@ -64,7 +72,9 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  Time.every 1000 Tick
+    if model.paused
+    then Sub.none
+    else Time.every 1000 Tick
 
 
 
@@ -78,4 +88,7 @@ view model =
     minute = String.fromInt (Time.toMinute model.zone model.time)
     second = String.fromInt (Time.toSecond model.zone model.time)
   in
-  h1 [] [ text (hour ++ ":" ++ minute ++ ":" ++ second) ]
+  div []
+  [ h1 [] [ text (hour ++ ":" ++ minute ++ ":" ++ second) ]
+  , button [ onClick TogglePause ] [text "Pause"]
+  ]
